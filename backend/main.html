@@ -1,6 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Predictor App</title>
+  <style>
+    /* General Page Styling */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh; /* ensures it fits screen */
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #00eaff;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 15px;
+      text-shadow: 0px 0px 10px rgba(0, 234, 255, 0.7);
+      font-size: 1.6rem;
+    }
+
+    hr {
+      border: none;
+      height: 2px;
+      background: linear-gradient(90deg, #00eaff, transparent);
+      margin-bottom: 20px;
+    }
+
+    /* Form Container */
+    form {
+      background: #161b22;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0, 234, 255, 0.2);
+      animation: fadeIn 0.8s ease-in-out;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #9da5b4;
+      font-size: 0.9rem;
+    }
+
+    select,
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      background: #0d1117;
+      color: #e6edf3;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    select:focus,
+    input:focus {
+      border-color: #00eaff;
+      box-shadow: 0 0 6px rgba(0, 234, 255, 0.5);
+    }
+
+    p {
+      margin-bottom: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #00eaff;
+      color: #0d1117;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    button:hover {
+      background: #00c4d6;
+      box-shadow: 0 0 12px rgba(0, 234, 255, 0.6);
+      transform: translateY(-2px);
+    }
+
+    /* Responsive adjustments */
+    @media (max-height: 600px) {
+      body {
+        align-items: flex-start; /* prevents cutoff */
+        padding-top: 10px;
+      }
+      .container {
+        padding: 10px;
+      }
+      form {
+        padding: 15px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.2rem;
+      }
+      button {
+        font-size: 14px;
+        padding: 10px;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Predictor</h1>
+    <hr>
+    <form action="result" id="fraudDetectionForm">
+      <p>
+        <label>Transaction Type:</label>
+        <select id="type" name="type" required>
+          <option value="">Select Type</option>
+          <option value="CASH_IN">CASH_IN</option>
+          <option value="CASH_OUT">CASH_OUT</option>
+          <option value="DEBIT">DEBIT</option>
+          <option value="PAYMENT">PAYMENT</option>
+          <option value="TRANSFER">TRANSFER</option>
+        </select>
+      </p>
+      
+      <p>
+        <label>Amount:</label>
+        <input type="number" id="amount" name="amount" step="0.01" min="0" required>
+      </p>
+      
+      <p>
+        <label>Old Balance Origin:</label>
+        <input type="number" id="oldbalanceOrg" name="oldbalanceOrg" step="0.01" min="0" required>
+      </p>
+      
+      <p>
+        <label>New Balance Origin:</label>
+        <input type="number" id="newbalanceOrig" name="newbalanceOrig" step="0.01" min="0" required>
+      </p>
+      
+      <p>
+        <label>Old Balance Destination:</label>
+        <input type="number" id="oldbalanceDest" name="oldbalanceDest" step="0.01" min="0" required>
+      </p>
+      
+      <p>
+        <label>New Balance Destination:</label>
+        <input type="number" id="newbalanceDest" name="newbalanceDest" step="0.01" min="0" required>
+      </p>
+      
+      <p>
+        <button type="submit">Submit</button>
+      </p>
+    </form>
+  </div>
+</body>
+</html>
+
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Predictor App</title>
@@ -46,7 +244,7 @@
             <input type="number" id="newbalanceDest" name="newbalanceDest" step="0.01" min="0" required>
         </p>
         
-        <!-- <p>
+        <p>
             <label>Balance Difference Origin:</label>
             <input type="number" id="balanceDiffOrg" name="balanceDiffOrg" step="0.01" required>
         </p>
@@ -54,7 +252,7 @@
         <p>
             <label>Balance Difference Destination:</label>
             <input type="number" id="balanceDiffDest" name="balanceDiffDest" step="0.01" required>
-        </p> -->
+        </p>
         
         <p>
             <button type="submit">Submit</button>
@@ -63,4 +261,5 @@
         
     </form>
 </body>
-</html>
+
+</html> -->
