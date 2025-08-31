@@ -66,11 +66,6 @@ python manage.py runserver
 - numpy
 - matplotlib
 
-## Note
-
-The large dataset files are not included in this repository due to size constraints. You'll need to:
-1. Place your `AIML_Dataset.csv` in the `saved_models/` directory
-2. Ensure your trained models (`.joblib` files) are in the `saved_models/` directory
 
 ## License
 
