@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History - Fraud Detection System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .transaction-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #007bff;
+        }
+        .transaction-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .fraud-transaction {
+            border-left-color: #dc3545;
+            background-color: #fff5f5;
+        }
+        .valid-transaction {
+            border-left-color: #28a745;
+            background-color: #f8fff9;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="bi bi-clock-history"></i>
+                    Transaction History Analysis
+                </h1>
+                
+                <!-- Search Form -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form method="GET" class="row g-3">
+                            <div class="col-md-6">
+                                <label for="account" class="form-label">Search by Account/Merchant Name:</label>
+                                <input type="text" class="form-control" id="account" name="account" 
+                                       value="{{ account_name }}" placeholder="Enter account or merchant name">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="period" class="form-label">Time Period:</label>
+                                <select class="form-select" id="period" name="period">
+                                    <option value="1month" {% if time_period == '1month' %}selected{% endif %}>Last Month</option>
+                                    <option value="3months" {% if time_period == '3months' %}selected{% endif %}>Last 3 Months</option>
+                                    <option value="6months" {% if time_period == '6months' %}selected{% endif %}>Last 6 Months</option>
+                                    <option value="1year" {% if time_period == '1year' %}selected{% endif %}>Last Year</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="bi bi-search"></i> Search
+                                </button>
+                                <a href="{% url 'transaction_history' %}" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-clockwise"></i> Clear
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                {% if account_name and chart_data %}
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-graph-up"></i> Monthly Transaction Amounts</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="amountChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-bar-chart"></i> Monthly Transaction Counts</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="countChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Results -->
+                {% if account_name %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Showing transactions for: <strong>{{ account_name }}</strong> ({{ time_period|title }})
+                    </div>
+                {% endif %}
+
+                {% if transactions %}
+                    <div class="row">
+                        {% for transaction in transactions %}
+                        <div class="col-12 mb-3">
+                            <div class="card transaction-card {% if transaction.isFraud %}fraud-transaction{% else %}valid-transaction{% endif %}">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-2">
+                                            <span class="badge {% if transaction.isFraud %}bg-danger{% else %}bg-success{% endif %} fs-6">
+                                                {% if transaction.isFraud %}FRAUD{% else %}VALID{% endif %}
+                                            </span>
+                                            <br>
+                                            <small class="text-muted">{{ transaction.type }}</small>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <strong>From:</strong> {{ transaction.nameOrig }}<br>
+                                            <small class="text-muted">
+                                                Balance: ₹{{ transaction.oldbalanceOrg }} → ₹{{ transaction.newbalanceOrig }}
+                                            </small>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <strong>To:</strong> {{ transaction.nameDest }}<br>
+                                            <small class="text-muted">
+                                                Balance: ₹{{ transaction.oldbalanceDest }} → ₹{{ transaction.newbalanceDest }}
+                                            </small>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <strong>Amount:</strong><br>
+                                            <span class="fs-5 text-primary">₹{{ transaction.amount }}</span>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted">{{ transaction.timestamp|date:"M d, Y H:i" }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {% if account_name %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            No transactions found for account: <strong>{{ account_name }}</strong>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            Enter an account or merchant name to search for transactions.
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+                <!-- Navigation -->
+                <div class="mt-4">
+                    <a href="{% url 'predictor' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Predictor
+                    </a>
+                    <a href="{% url 'all_transactions' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list"></i> View All Transactions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize charts if data exists
+        {% if chart_data %}
+        const chartData = {{ chart_data|safe }};
+        
+        // Amount Chart
+        if (chartData.labels && chartData.amounts) {
+            const amountCtx = document.getElementById('amountChart').getContext('2d');
+            new Chart(amountCtx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Transaction Amount (₹)',
+                        data: chartData.amounts,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Amount (₹)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Count Chart
+        if (chartData.labels && chartData.counts) {
+            const countCtx = document.getElementById('countChart').getContext('2d');
+            new Chart(countCtx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Transaction Count',
+                        data: chartData.counts,
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        borderColor: 'rgb(54, 162, 235)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Count'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        {% endif %}
+    </script>
+</body>
+</html>

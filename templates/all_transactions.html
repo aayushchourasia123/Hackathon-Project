@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Transactions - Fraud Detection System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .table-responsive {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .fraud-row {
+            background-color: #fff5f5;
+        }
+        .valid-row {
+            background-color: #f8fff9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="bi bi-table"></i>
+                    All Transactions
+                </h1>
+                
+                <!-- Filters -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form method="GET" class="row g-3">
+                            <div class="col-md-4">
+                                <label for="type" class="form-label">Transaction Type:</label>
+                                <select class="form-select" id="type" name="type">
+                                    <option value="">All Types</option>
+                                    <option value="CASH_IN" {% if transaction_type == 'CASH_IN' %}selected{% endif %}>CASH_IN</option>
+                                    <option value="CASH_OUT" {% if transaction_type == 'CASH_OUT' %}selected{% endif %}>CASH_OUT</option>
+                                    <option value="DEBIT" {% if transaction_type == 'DEBIT' %}selected{% endif %}>DEBIT</option>
+                                    <option value="PAYMENT" {% if transaction_type == 'PAYMENT' %}selected{% endif %}>PAYMENT</option>
+                                    <option value="TRANSFER" {% if transaction_type == 'TRANSFER' %}selected{% endif %}>TRANSFER</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="fraud" class="form-label">Fraud Status:</label>
+                                <select class="form-select" id="fraud" name="fraud">
+                                    <option value="">All Transactions</option>
+                                    <option value="fraud" {% if fraud_filter == 'fraud' %}selected{% endif %}>Fraud Only</option>
+                                    <option value="valid" {% if fraud_filter == 'valid' %}selected{% endif %}>Valid Only</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="bi bi-funnel"></i> Filter
+                                </button>
+                                <a href="{% url 'all_transactions' %}" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-clockwise"></i> Clear
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Transactions Table -->
+                {% if transactions %}
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Type</th>
+                                            <th>Amount</th>
+                                            <th>From Account</th>
+                                            <th>To Account</th>
+                                            <th>Status</th>
+                                            <th>Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for transaction in transactions %}
+                                        <tr class="{% if transaction.isFraud %}fraud-row{% else %}valid-row{% endif %}">
+                                            <td>{{ transaction.transaction_id }}</td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ transaction.type }}</span>
+                                            </td>
+                                            <td>
+                                                <strong>₹{{ transaction.amount }}</strong>
+                                            </td>
+                                            <td>{{ transaction.nameOrig }}</td>
+                                            <td>{{ transaction.nameDest }}</td>
+                                            <td>
+                                                <span class="badge {% if transaction.isFraud %}bg-danger{% else %}bg-success{% endif %}">
+                                                    {% if transaction.isFraud %}FRAUD{% else %}VALID{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>{{ transaction.timestamp|date:"M d, Y H:i" }}</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-info" 
+                                                        onclick="showTransactionDetails({{ transaction.transaction_id }})">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        No transactions found with the current filters.
+                    </div>
+                {% endif %}
+
+                <!-- Navigation -->
+                <div class="mt-4">
+                    <a href="{% url 'predictor' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Predictor
+                    </a>
+                    <a href="{% url 'transaction_history' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-clock-history"></i> Transaction History
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Details Modal -->
+    <div class="modal fade" id="transactionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Transaction Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="transactionModalBody">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showTransactionDetails(transactionId) {
+            // This would typically make an AJAX call to get transaction details
+            // For now, we'll just show a simple message
+            document.getElementById('transactionModalBody').innerHTML = 
+                `<p>Transaction ID: ${transactionId}</p>
+                 <p>Detailed information would be loaded here via AJAX.</p>`;
+            
+            new bootstrap.Modal(document.getElementById('transactionModal')).show();
+        }
+    </script>
+</body>
+</html>

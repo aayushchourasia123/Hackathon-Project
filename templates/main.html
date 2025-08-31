@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection Predictor</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+    .alert {
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .alert:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    
+    .alert-danger {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+        border-left: 5px solid #dc3545;
+    }
+    
+    .alert-success {
+        background: linear-gradient(135deg, #51cf66, #40c057);
+        color: white;
+        border-left: 5px solid #28a745;
+    }
+    
+    .btn-close {
+        filter: invert(1);
+    }
+    
+    .alert-heading {
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .nav-pills .nav-link.active {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .dataset-info {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+    }
+</style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'predictor' %}">
+                <i class="bi bi-shield-check"></i> Fraud Detection System
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{% url 'predictor' %}">
+                    <i class="bi bi-calculator"></i> Predictor
+                </a>
+                <a class="nav-link" href="{% url 'all_transactions' %}">
+                    <i class="bi bi-table"></i> All Transactions
+                </a>
+                <a class="nav-link" href="{% url 'transaction_history' %}">
+                    <i class="bi bi-clock-history"></i> Transaction History
+                </a>
+                <a class="nav-link" href="{% url 'account_analysis' %}">
+                    <i class="bi bi-graph-up"></i> Account Analysis
+                </a>
+                <a class="nav-link" href="{% url 'dataset_loader' %}">
+                    <i class="bi bi-upload"></i> Load Dataset
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Dataset Information Banner - REMOVED -->
+        
+        <div class="row">
+            <div class="col-md-8">
+                <h1><i class="bi bi-calculator"></i> Fraud Detection Predictor</h1>
+                <p class="lead">Enter transaction details to detect potential fraud</p>
+                
+                {% if show_result %}
+                <div class="alert alert-{{ result_class }} alert-dismissible fade show shadow-lg" role="alert" style="border-radius: 15px; border: none;">
+                    <div class="d-flex align-items-center">
+                        <span class="me-3" style="font-size: 2rem;">{{ icon }}</span>
+                        <div class="flex-grow-1">
+                            <h5 class="alert-heading mb-1 fw-bold">{{ prediction }}</h5>
+                            <p class="mb-0">{{ message }}</p>
+                            {% if transaction_id %}
+                            <small class="d-block mt-2">
+                                <i class="bi bi-info-circle"></i>
+                                Transaction ID: {{ transaction_id }} - Saved to database
+                            </small>
+                            {% endif %}
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form action="{% url 'FormInfo' %}" method="GET" class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Transaction Type:</label>
+                                <select id="type" name="type" class="form-select" required>
+                                    <option value="">Select Type</option>
+                                    <option value="CASH_IN">CASH_IN</option>
+                                    <option value="CASH_OUT">CASH_OUT</option>
+                                    <option value="DEBIT">DEBIT</option>
+                                    <option value="PAYMENT">PAYMENT</option>
+                                    <option value="TRANSFER">TRANSFER</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Amount:</label>
+                                <input type="number" id="amount" name="amount" step="0.01" min="0" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Name Origin:</label>
+                                <input type="text" id="nameOrig" name="nameOrig" class="form-control" placeholder="Enter origin account name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Name Destination:</label>
+                                <input type="text" id="nameDest" name="nameDest" class="form-control" placeholder="Enter destination account name" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Old Balance Origin:</label>
+                                <input type="number" id="oldbalanceOrg" name="oldbalanceOrg" step="0.01" min="0" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">New Balance Origin:</label>
+                                <input type="number" id="newbalanceOrig" name="newbalanceOrig" step="0.01" min="0" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Old Balance Destination:</label>
+                                <input type="number" id="oldbalanceDest" name="oldbalanceDest" step="0.01" min="0" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">New Balance Destination:</label>
+                                <input type="number" id="newbalanceDest" name="newbalanceDest" step="0.01" min="0" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-search"></i> Analyze Transaction
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-info-circle"></i> Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'all_transactions' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-table"></i> View All Transactions
+                            </a>
+                            <a href="{% url 'transaction_history' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-clock-history"></i> Search Transaction History
+                            </a>
+                            <a href="{% url 'account_analysis' %}" class="btn btn-outline-info">
+                                <i class="bi bi-graph-up"></i> Analyze Account Pairs
+                            </a>
+                            <a href="{% url 'dataset_loader' %}" class="btn btn-outline-warning">
+                                <i class="bi bi-upload"></i> Load Your Dataset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if dataset_info.dataset_loaded %}
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5><i class="bi bi-graph-up"></i> Dataset Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <h5 class="mb-0">{{ dataset_info.total_transactions|floatformat:0 }}</h5>
+                                <small>Total</small>
+                            </div>
+                            <div class="col-4">
+                                <h5 class="mb-0">{{ dataset_info.fraud_count|floatformat:0 }}</h5>
+                                <small>Fraud</small>
+                            </div>
+                            <div class="col-4">
+                                <h5 class="mb-0">₹{{ dataset_info.total_amount|floatformat:0 }}</h5>
+                                <small>Amount</small>
+                            </div>
+                        </div>
+                        <hr>
+                        <small class="text-muted">
+                            <strong>Transaction Types:</strong><br>
+                            {% for type_name, count in dataset_info.type_distribution.items %}
+                            {{ type_name }}: {{ count }}<br>
+                            {% endfor %}
+                        </small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+        
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Analysis - Fraud Detection System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .analysis-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+        }
+        .transaction-summary {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+        .stats-card {
+            transition: all 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="bi bi-graph-up"></i>
+                    Single Account Transaction Analysis
+                </h1>
+                
+                <!-- Search Form -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form method="GET" class="row g-3">
+                            <div class="col-md-8">
+                                <label for="account" class="form-label">Enter Account Name/Number:</label>
+                                <input type="text" class="form-control" id="account" name="account" 
+                                       value="{{ account_name }}" placeholder="Enter account name or number to analyze">
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> Analyze Account
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Analysis Results -->
+                {% if account_name %}
+                    {% if transactions %}
+                        <!-- Summary Statistics -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card stats-card text-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Transactions</h5>
+                                        <h2 class="text-primary">{{ transactions.count }}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stats-card text-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Amount</h5>
+                                        <h2 class="text-success">₹{{ total_amount|floatformat:2 }}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stats-card text-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Fraud Cases</h5>
+                                        <h2 class="text-danger">{{ fraud_count }}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stats-card text-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Valid Cases</h5>
+                                        <h2 class="text-success">{{ valid_count }}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Statistics -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5><i class="bi bi-calculator"></i> Financial Summary</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <strong>Incoming Transactions:</strong><br>
+                                                <span class="text-success">{{ incoming_count }}</span> transactions<br>
+                                                <small class="text-muted">Total: ₹{{ incoming_amount|floatformat:2 }}</small>
+                                            </div>
+                                            <div class="col-6">
+                                                <strong>Outgoing Transactions:</strong><br>
+                                                <span class="text-danger">{{ outgoing_count }}</span> transactions<br>
+                                                <small class="text-muted">Total: ₹{{ outgoing_amount|floatformat:2 }}</small>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="text-center">
+                                            <strong>Net Flow:</strong>
+                                            <h4 class="{% if net_flow >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                                ₹{{ net_flow|floatformat:2 }}
+                                            </h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5><i class="bi bi-pie-chart"></i> Transaction Type Distribution</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        {% for type_name, count in type_distribution.items %}
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span>{{ type_name }}</span>
+                                            <span class="badge bg-primary">{{ count }}</span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts -->
+                        {% if chart_data %}
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5><i class="bi bi-pie-chart"></i> Transaction Type Distribution</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-container">
+                                            <canvas id="typeChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5><i class="bi bi-bar-chart"></i> Monthly Transaction Activity</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-container">
+                                            <canvas id="monthlyChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Transaction Details -->
+                        <div class="card analysis-card">
+                            <div class="card-body">
+                                <h4 class="card-title">
+                                    <i class="bi bi-list-ul"></i>
+                                    All Transactions for Account: <strong>{{ account_name }}</strong>
+                                </h4>
+                                
+                                {% for transaction in transactions %}
+                                <div class="transaction-summary">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-2">
+                                            <span class="badge {% if transaction.isFraud %}bg-danger{% else %}bg-success{% endif %}">
+                                                {% if transaction.isFraud %}FRAUD{% else %}VALID{% endif %}
+                                            </span>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <strong>{{ transaction.type }}</strong>
+                                        </div>
+                                        <div class="col-md-3">
+                                            {% if transaction.nameOrig == account_name %}
+                                                <span class="text-danger">→ {{ transaction.nameDest }}</span>
+                                                <br><small class="text-muted">Outgoing</small>
+                                            {% else %}
+                                                <span class="text-success">{{ transaction.nameOrig }} →</span>
+                                                <br><small class="text-muted">Incoming</small>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-2">
+                                            <span class="fs-6">₹{{ transaction.amount }}</span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small>{{ transaction.timestamp|date:"M d, Y H:i" }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            No transactions found for account: <strong>{{ account_name }}</strong>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Enter an account name or number to analyze all its transactions.
+                    </div>
+                {% endif %}
+
+                <!-- Navigation -->
+                <div class="mt-4">
+                    <a href="{% url 'predictor' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Predictor
+                    </a>
+                    <a href="{% url 'transaction_history' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-clock-history"></i> Transaction History
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize charts if data exists
+        {% if chart_data %}
+        const chartData = {{ chart_data|safe }};
+        
+        // Type Distribution Chart
+        if (chartData.types && chartData.type_counts) {
+            const typeCtx = document.getElementById('typeChart').getContext('2d');
+            new Chart(typeCtx, {
+                type: 'pie',
+                data: {
+                    labels: chartData.types,
+                    datasets: [{
+                        data: chartData.type_counts,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Monthly Activity Chart
+        if (chartData.monthly_labels && chartData.monthly_counts) {
+            const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+            new Chart(monthlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.monthly_labels,
+                    datasets: [{
+                        label: 'Transactions per Month',
+                        data: chartData.monthly_counts,
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        borderColor: 'rgb(54, 162, 235)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Transaction Count'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        {% endif %}
+    </script>
+</body>
+</html>
