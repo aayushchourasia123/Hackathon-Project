@@ -25,7 +25,7 @@ MLdeployment/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourfriend/MLdeployment.git
+git clone(https://github.com/aayushchourasia123/Hackathon-Project)
 cd MLdeployment
 ```
 
